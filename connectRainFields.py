@@ -1,4 +1,3 @@
-import db
 from RainField import RainField
 import pymongo
 from RainFieldGraph import RainFieldGraph
