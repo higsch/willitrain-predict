@@ -7,15 +7,18 @@ from osgeo import gdal
 import numpy as np
 from skimage import measure
 import matplotlib.pyplot as plt
+import pickle
 
 API_URL = 'https://opendata-download-radar.smhi.se/api/version/latest/area/sweden/product/comp/'
 DATE = datetime.utcnow().strftime('%Y/%m/%d')
 FORMAT = 'format=tif'
 TIMEZONE = 'timeZone=UTC'
 DATETIME_FORMAT = '%Y-%m-%d %H:%M'
+IMAGES_FILEPATH = 'radars/images/'
+PICKLES_FILEPATH = 'radars/pickles/'
 
 
-def fetchRadarInfo():
+def _fetchRadarInfo():
     url = API_URL + DATE + '?' + FORMAT + '&' + TIMEZONE
     try:
         return(json.loads(requests.get(url).content))
@@ -23,7 +26,7 @@ def fetchRadarInfo():
         print(e)
 
 
-def parseRadarInfo(radarInfo, maxEntries = 10):
+def _parseRadarInfo(radarInfo, maxEntries = 10):
     i = 0
     for entry in radarInfo['files'][::-1]:
         if (i == maxEntries):
@@ -38,13 +41,12 @@ def parseRadarInfo(radarInfo, maxEntries = 10):
         yield (key, timeStamp, link)
 
 
-def saveToFile(name, data):
-    file = open('radars/' + name + '.tiff', 'wb')
-    file.write(data)
-    file.close()
+def _saveToTiff(name, data):
+    with open(IMAGES_FILEPATH + name + '.tiff', 'wb') as handle:
+        handle.write(data)
 
 
-def getImageArray(image):
+def _getImageArray(image):
     mmapName = '/vsimem/' + str(uuid4())
     gdal.FileFromMemBuffer(mmapName, image.read())
     dataset = gdal.Open(mmapName)
@@ -53,21 +55,28 @@ def getImageArray(image):
     return(imageArray)
 
 
+def _saveToPickle(name, data):
+    with open(PICKLES_FILEPATH + name + '.pickle', 'wb') as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 def downloadRadars(numRadars):
     radars = []
-    radarInfo = fetchRadarInfo()
-    for (key, timeStamp, link) in parseRadarInfo(radarInfo, numRadars):
+    radarInfo = _fetchRadarInfo()
+    for (key, timeStamp, link) in _parseRadarInfo(radarInfo, numRadars):
         data = requests.get(link).content
-        saveToFile(str(timeStamp).replace(':', '-').replace(' ', '-'), data)
+        fileName = str(timeStamp).replace(':', '-').replace(' ', '-')
+        _saveToTiff(fileName, data)
         image = BytesIO(data)
-        iArr = getImageArray(image)
+        iArr = _getImageArray(image)
         radar = {
             'key': key,
             'timeStamp': timeStamp,
             'iArr': iArr,
-            'image': image,
+            'data': data,
             'downloadedAt': datetime.utcnow()
         }
+        _saveToPickle(fileName, radar)
         radars.append(radar)
     return(radars)
 
