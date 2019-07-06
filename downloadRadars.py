@@ -56,12 +56,6 @@ def _getImageArray(image):
   return(imageArray)
 
 
-def _identifyRainMasses(arr):
-  arr = (arr != 0) & (arr != 255)
-  rainMasses = measure.label(arr, background=0, neighbors=8)
-  return(rainMasses)
-
-
 def _saveRainMassesToPng(name, data):
   plt.figure(figsize=(10, 15))
   plt.imshow(data)
@@ -73,6 +67,12 @@ def _saveToPickle(name, data):
     pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+def identifyRainMasses(arr):
+  arr = (arr != 0) & (arr != 255)
+  rainMasses = measure.label(arr, background=0, neighbors=4)
+  return(rainMasses)
+
+
 def downloadRadars(numRadars):
   radars = []
   radarInfo = _fetchRadarInfo()
@@ -82,7 +82,7 @@ def downloadRadars(numRadars):
     _saveToTiff(fileName, data)
     image = BytesIO(data)
     iArr = _getImageArray(image)
-    rainMasses = _identifyRainMasses(iArr)
+    rainMasses = identifyRainMasses(iArr)
     _saveRainMassesToPng('rainmass' + fileName, rainMasses)
     radar = {
       'key': key,
