@@ -4,7 +4,7 @@ from RainField import RainField
 
 if __name__ == '__main__':
   # get the last 10 radars
-  radars = downloadRadars(10)
+  radars = downloadRadars(24)
 
   # feed the radars into a rainfield object
   rainField = RainField(radars)

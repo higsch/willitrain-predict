@@ -60,6 +60,7 @@ def _saveRainMassesToPng(name, data):
   plt.figure(figsize=(10, 15))
   plt.imshow(data)
   plt.savefig(IMAGES_FILEPATH + name + '.png')
+  plt.close()
 
 
 def _saveToPickle(name, data):
